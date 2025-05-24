@@ -1,0 +1,42 @@
+class OrderService {
+	constructor(notificationService) {
+		this.notificationService = notificationService;
+	}
+
+	async processOrderStatusUpdate(orderId, status, customer) {
+		try {
+			// Extract phone information
+			const phoneData = customer.phone[0];
+			const fullPhoneNumber = `55${phoneData.ddd}${phoneData.number}`;
+			
+			// Log processing information
+			console.log(`Processing order ID: ${orderId}, Status: ${status.label}, Customer: ${customer.name}, Phone: ${fullPhoneNumber}`);
+
+			// Create personalized message based on status label
+			const message = this.createStatusMessage(orderId, status.label, customer.name);
+
+			// Notify the customer about the order status update
+			await this.notificationService.sendWhatsAppNotification(fullPhoneNumber, message);
+		} catch (error) {
+			console.error('Error processing order status update:', error);
+			throw new Error('Failed to process order status update');
+		}
+	}
+
+	createStatusMessage(orderId, statusLabel, customerName) {
+		const greeting = customerName ? `Olá ${customerName}! ` : 'Olá! ';
+		
+		const statusMessages = {
+			'Pendente': `🕐 ${greeting}Seu pedido #${orderId} está pendente e será processado em breve.`,
+			'Confirmado': `✅ ${greeting}Seu pedido #${orderId} foi confirmado! Obrigado pela preferência.`,
+			'Em preparo': `👨‍🍳 ${greeting}Seu pedido #${orderId} está sendo preparado com carinho.`,
+			'Pronto': `🎉 ${greeting}Seu pedido #${orderId} está pronto! Pode vir buscar.`,
+			'Entregue': `📦 ${greeting}Seu pedido #${orderId} foi entregue. Esperamos que goste!`,
+			'Cancelado': `❌ ${greeting}Seu pedido #${orderId} foi cancelado. Entre em contato conosco se tiver dúvidas.`,
+		};
+
+		return statusMessages[statusLabel] || `📋 ${greeting}Status do seu pedido #${orderId}: ${statusLabel}`;
+	}
+}
+
+export {OrderService};
