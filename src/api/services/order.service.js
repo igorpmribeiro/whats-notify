@@ -33,9 +33,10 @@ class OrderService {
 			'Pronto': `🎉 ${greeting}Seu pedido #${orderId} está pronto! Pode vir buscar.`,
 			'Entregue': `📦 ${greeting}Seu pedido #${orderId} foi entregue. Esperamos que goste!`,
 			'Cancelado': `❌ ${greeting}Seu pedido #${orderId} foi cancelado. Entre em contato conosco se tiver dúvidas.`,
+			'Reservado': `📅 ${greeting}Seu pedido #${orderId} foi reservado e já aguarda pela sua retirada. Obrigado!`
 		};
 
-		return statusMessages[statusLabel] || `📋 ${greeting}Status do seu pedido #${orderId}: ${statusLabel}`;
+		return statusMessages[statusLabel] || `📋 ${greeting} Seu pedido ${orderId} foi atualizado e o novo status dele é ${statusLabel}`;
 	}
 }
 
