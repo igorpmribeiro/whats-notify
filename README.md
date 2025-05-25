@@ -1,6 +1,6 @@
-# WhatsApp Notify - Evolution API Integration
+# WhatsApp Notify - Evolution API and ChatPro integration
 
-Sistema de notificações WhatsApp integrado com Evolution API para envio automático de mensagens sobre status de pedidos.
+Sistema simples de notificações via whatsapp através do recebimento de webhooks, possibilidade de integrsções com Evolution API e ChatPro API.
 
 ## 🚀 Configuração
 
