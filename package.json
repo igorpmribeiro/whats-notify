@@ -2,10 +2,12 @@
   "$schema": "http://json.schemastore.org/package.json",
   "name": "whatsapp-notify",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "api/index.js",
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch api/index.js",
+    "start": "node api/index.js",
+    "build": "echo 'No build step required for Node.js serverless functions'"
   },
   "keywords": [],
   "author": "",

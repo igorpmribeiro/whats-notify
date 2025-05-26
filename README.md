@@ -36,9 +36,57 @@ npm install
 
 ### 3. Execução
 
+**Desenvolvimento:**
 ```bash
 npm run dev
 ```
+
+**Produção:**
+```bash
+npm start
+```
+
+## 🚀 Deploy na Vercel
+
+### 1. Preparação do Projeto
+
+O projeto já está configurado para deploy na Vercel com:
+- `vercel.json` - Configuração de deployment
+- Scripts de build e start no `package.json`
+
+### 2. Deploy via CLI
+
+```bash
+# Instalar Vercel CLI
+npm i -g vercel
+
+# Login na Vercel
+vercel login
+
+# Deploy
+vercel --prod
+```
+
+### 3. Deploy via GitHub
+
+1. Faça push do código para um repositório GitHub
+2. Conecte o repositório na [Vercel](https://vercel.com)
+3. Configure as variáveis de ambiente no dashboard da Vercel
+4. Deploy automático será realizado
+
+### 4. Variáveis de Ambiente na Vercel
+
+Configure as seguintes variáveis no dashboard da Vercel:
+
+```
+EVOLUTION_API_URL=your-evolution-api-url
+EVOLUTION_API_KEY=your-api-key
+EVOLUTION_INSTANCE_NAME=your-instance-name
+CHATPRO_INSTANCEID=your-chatpro-instance-id
+CHATPRO_TOKEN=your-chatpro-token
+```
+
+**Nota:** A variável `PORT` não é necessária na Vercel, pois ela é gerenciada automaticamente.
 
 ## 📡 Endpoints
 

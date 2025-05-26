@@ -1,7 +1,7 @@
 import express from 'express';
-import config from './api/config/index.js';
-import { AppSetup } from './api/setup.js';
-import { createWebhookRouter } from './api/webhook.router.js';
+import config from './app/config/index.js';
+import { AppSetup } from './app/setup.js';
+import { createWebhookRouter } from './app/webhook.router.js';
 
 const app = express();
 const PORT = config.server.port;
@@ -59,6 +59,13 @@ async function startServer() {
 			}
 		});
 
+		// Para Vercel (serverless), não iniciamos o servidor diretamente
+		if (process.env.VERCEL) {
+			// Em produção na Vercel, apenas exportamos o app
+			return;
+		}
+
+		// Em desenvolvimento local, iniciamos o servidor
 		app.listen(PORT, () => {
 			console.log(`🚀 Server is running on http://localhost:${PORT}`);
 			console.log(`📱 WhatsApp notifications ready!`);
@@ -73,3 +80,6 @@ async function startServer() {
 }
 
 startServer();
+
+// Export para Vercel (serverless functions)
+export default app;
