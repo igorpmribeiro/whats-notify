@@ -28,9 +28,9 @@ class OrderService {
 		
 		const statusMessages = {
 			'Pendente': `🕐 ${greeting}Seu pedido #${orderId} está pendente e será processado em breve.`,
-			'Confirmado': `✅ ${greeting}Seu pedido #${orderId} foi confirmado! Obrigado pela preferência.`,
+			'Aprovado': `✅ ${greeting}Seu pedido #${orderId} foi confirmado! Obrigado pela preferência.`,
 			'Em preparo': `👨‍🍳 ${greeting}Seu pedido #${orderId} está sendo preparado com carinho.`,
-			'Pronto': `🎉 ${greeting}Seu pedido #${orderId} está pronto! Pode vir buscar.`,
+			'Enviado': `🎉 ${greeting}Seu pedido #${orderId} já foi enviado e será entregue em sua residência em até 3 dias úteis.`,
 			'Entregue': `📦 ${greeting}Seu pedido #${orderId} foi entregue. Esperamos que goste!`,
 			'Cancelado': `❌ ${greeting}Seu pedido #${orderId} foi cancelado. Entre em contato conosco se tiver dúvidas.`,
 			'Reservado': `📅 ${greeting}Seu pedido #${orderId} foi reservado e já aguarda pela sua retirada. Obrigado!`
