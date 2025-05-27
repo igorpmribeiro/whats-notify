@@ -2,6 +2,7 @@ import express from 'express';
 import config from './app/config/index.js';
 import { AppSetup } from './app/setup.js';
 import { createWebhookRouter } from './app/webhook.router.js';
+import { chatProRouter } from './app/chatpro.router.js';
 
 const app = express();
 const PORT = config.server.port;
@@ -30,6 +31,9 @@ async function startServer() {
 				endpoints: {
 					webhook: '/webhook/order-update',
 					health: '/webhook/health',
+					status: '/chatpro/status',
+					qrcode: '/chatpro/qrcode',
+					qrcodeDisplay: '/chatpro/qrcode/display',
 					test: '/test-message',
 				}
 			});
@@ -58,6 +62,9 @@ async function startServer() {
 				});
 			}
 		});
+
+		// Rota para o ChatPro
+		app.use('/chatpro', chatProRouter);
 
 		// Para Vercel (serverless), não iniciamos o servidor diretamente
 		if (process.env.VERCEL) {
