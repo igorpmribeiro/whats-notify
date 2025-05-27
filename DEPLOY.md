@@ -22,15 +22,6 @@ CHATPRO_INSTANCEID=seu-instance-id-chatpro
 CHATPRO_TOKEN=seu-token-chatpro
 ```
 
-### Exemplo de valores:
-```
-EVOLUTION_API_URL=https://sua-evolution-api.com
-EVOLUTION_API_KEY=B6D882DC-5A4C-4E73-8F25-1234567890AB
-EVOLUTION_INSTANCE_NAME=minha-instancia-whatsapp
-
-CHATPRO_INSTANCEID=chatpro-48h9frer6t
-CHATPRO_TOKEN=5d6cdcbb9aa4fcd7157108e787982388
-```
 
 ## 📋 Endpoints disponíveis:
 
