@@ -1,43 +1,41 @@
-import { ChatProClient } from "./clients/chatpro.client.js";
-import { Router } from "express";
-import config from "./config/index.js";
+import { Router } from 'express';
 
-const chatProClient = new ChatProClient(
-  config.chatPro.baseUrl,
-  config.chatPro.instanceId,
-  config.chatPro.apiKey
-);
-const chatProRouter = Router();
+const createChatProRouter = (chatProClient) => {
+	const chatProRouter = Router();
 
-chatProRouter.get('/status', async (req, res) => {
-  try {
-    const status = await chatProClient.getStatus();
-    res.json(status);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to get status', details: error.message });
-  }
-});
+	chatProRouter.get('/status', async (req, res) => {
+		try {
+			const status = await chatProClient.getStatus();
+			res.json(status);
+		} catch (error) {
+			res
+				.status(500)
+				.json({ error: 'Failed to get status', details: error.message });
+		}
+	});
 
-// Rota que retorna apenas o JSON com o QR code
-chatProRouter.get('/qrcode', async (req, res) => {
-  try {
-    const qrCode = await chatProClient.qrCodeGenerate();
-    res.json(qrCode);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to generate QR code', details: error.message });
-  }
-});
+	// Rota que retorna apenas o JSON com o QR code
+	chatProRouter.get('/qrcode', async (req, res) => {
+		try {
+			const qrCode = await chatProClient.qrCodeGenerate();
+			res.json(qrCode);
+		} catch (error) {
+			res
+				.status(500)
+				.json({ error: 'Failed to generate QR code', details: error.message });
+		}
+	});
 
-// Rota que exibe o QR code em uma página HTML
-chatProRouter.get('/qrcode/display', async (req, res) => {
-  try {
-    const qrCodeData = await chatProClient.qrCodeGenerate();
-    
-    if (!qrCodeData.qr) {
-      return res.status(400).json({ error: 'QR code not available' });
-    }
+	// Rota que exibe o QR code em uma página HTML
+	chatProRouter.get('/qrcode/display', async (req, res) => {
+		try {
+			const qrCodeData = await chatProClient.qrCodeGenerate();
 
-    const htmlPage = `
+			if (!qrCodeData.qr) {
+				return res.status(400).json({ error: 'QR code not available' });
+			}
+
+			const htmlPage = `
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -199,10 +197,18 @@ chatProRouter.get('/qrcode/display', async (req, res) => {
 </body>
 </html>`;
 
-    res.send(htmlPage);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to generate QR code display', details: error.message });
-  }
-});
+			res.send(htmlPage);
+		} catch (error) {
+			res
+				.status(500)
+				.json({
+					error: 'Failed to generate QR code display',
+					details: error.message,
+				});
+		}
+	});
 
-export { chatProRouter };
+	return chatProRouter;
+};
+
+export { createChatProRouter };

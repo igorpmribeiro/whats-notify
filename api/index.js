@@ -2,7 +2,7 @@ import express from 'express';
 import config from './app/config/index.js';
 import { AppSetup } from './app/setup.js';
 import { createWebhookRouter } from './app/webhook.router.js';
-import { chatProRouter } from './app/chatpro.router.js';
+import { createChatProRouter } from './app/chatpro.router.js';
 
 const app = express();
 const PORT = config.server.port;
@@ -21,7 +21,9 @@ async function startServer() {
 		
 		// Configurar rotas
 		const webhookRouter = createWebhookRouter(services.webhookController);
+		const chatProRouter = createChatProRouter(services.chatProClient);
 		app.use('/webhook', webhookRouter);
+		app.use('/chatpro', chatProRouter);
 
 		// Rota raiz
 		app.get('/', (req, res) => {
@@ -48,13 +50,20 @@ async function startServer() {
 					return res.status(400).json({ error: 'phoneNumber is required' });
 				}
 
-				await appSetup.sendTestMessage(phoneNumber, message);
+				const result = await appSetup.sendTestMessage(phoneNumber, message);
 				
-				res.json({ 
+				const response = { 
 					success: true, 
-					message: 'Test message sent successfully',
-					phoneNumber 
-				});
+					message: 'Test message processed',
+					phoneNumber,
+					sent: !result?.skipped
+				};
+
+				if (result?.skipped) {
+					response.skippedReason = result.reason;
+				}
+
+				res.json(response);
 			} catch (error) {
 				res.status(500).json({ 
 					error: 'Failed to send test message',
@@ -62,15 +71,6 @@ async function startServer() {
 				});
 			}
 		});
-
-		// Rota para o ChatPro
-		app.use('/chatpro', chatProRouter);
-
-		// Para Vercel (serverless), não iniciamos o servidor diretamente
-		if (process.env.VERCEL) {
-			// Em produção na Vercel, apenas exportamos o app
-			return;
-		}
 
 		// Em desenvolvimento local, iniciamos o servidor
 		app.listen(PORT, () => {

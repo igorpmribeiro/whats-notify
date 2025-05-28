@@ -5,12 +5,12 @@ class EvolutionApiClient {
 		this.baseUrl = baseUrl;
 		this.apiKey = apiKey;
 		this.instanceName = instanceName;
-		
+
 		this.httpClient = axios.create({
 			baseURL: baseUrl,
 			headers: {
 				'Content-Type': 'application/json',
-				'apikey': apiKey,
+				apikey: apiKey,
 			},
 			timeout: 30000, // 30 segundos
 		});
@@ -20,7 +20,7 @@ class EvolutionApiClient {
 		try {
 			// Remove caracteres não numéricos do número de telefone
 			const phoneNumber = to.replace(/\D/g, '');
-			
+
 			const payload = {
 				number: phoneNumber,
 				text: message,
@@ -28,7 +28,7 @@ class EvolutionApiClient {
 
 			const response = await this.httpClient.post(
 				`/message/sendText/${this.instanceName}`,
-				payload
+				payload,
 			);
 
 			return {
@@ -37,15 +37,20 @@ class EvolutionApiClient {
 				data: response.data,
 			};
 		} catch (error) {
-			console.error('Evolution API Error:', error.response?.data || error.message);
-			throw new Error(`Failed to send message via Evolution API: ${error.response?.data?.message || error.message}`);
+			console.error(
+				'Evolution API Error:',
+				error.response?.data || error.message,
+			);
+			throw new Error(
+				`Failed to send message via Evolution API: ${error.response?.data?.message || error.message}`,
+			);
 		}
 	}
 
 	async sendWhatsAppMedia(to, mediaUrl, caption = '') {
 		try {
 			const phoneNumber = to.replace(/\D/g, '');
-			
+
 			const payload = {
 				number: phoneNumber,
 				media: mediaUrl,
@@ -54,7 +59,7 @@ class EvolutionApiClient {
 
 			const response = await this.httpClient.post(
 				`/message/sendMedia/${this.instanceName}`,
-				payload
+				payload,
 			);
 
 			return {
@@ -63,28 +68,47 @@ class EvolutionApiClient {
 				data: response.data,
 			};
 		} catch (error) {
-			console.error('Evolution API Media Error:', error.response?.data || error.message);
-			throw new Error(`Failed to send media via Evolution API: ${error.response?.data?.message || error.message}`);
+			console.error(
+				'Evolution API Media Error:',
+				error.response?.data || error.message,
+			);
+			throw new Error(
+				`Failed to send media via Evolution API: ${error.response?.data?.message || error.message}`,
+			);
 		}
 	}
 
 	async getInstanceStatus() {
 		try {
-			const response = await this.httpClient.get(`/instance/connectionState/${this.instanceName}`);
+			const response = await this.httpClient.get(
+				`/instance/connectionState/${this.instanceName}`,
+			);
 			return response.data;
 		} catch (error) {
-			console.error('Evolution API Status Error:', error.response?.data || error.message);
-			throw new Error(`Failed to get instance status: ${error.response?.data?.message || error.message}`);
+			console.error(
+				'Evolution API Status Error:',
+				error.response?.data || error.message,
+			);
+			throw new Error(
+				`Failed to get instance status: ${error.response?.data?.message || error.message}`,
+			);
 		}
 	}
 
 	async generateQRCode() {
 		try {
-			const response = await this.httpClient.get(`/instance/connect/${this.instanceName}`);
+			const response = await this.httpClient.get(
+				`/instance/connect/${this.instanceName}`,
+			);
 			return response.data;
 		} catch (error) {
-			console.error('Evolution API QR Error:', error.response?.data || error.message);
-			throw new Error(`Failed to generate QR code: ${error.response?.data?.message || error.message}`);
+			console.error(
+				'Evolution API QR Error:',
+				error.response?.data || error.message,
+			);
+			throw new Error(
+				`Failed to generate QR code: ${error.response?.data?.message || error.message}`,
+			);
 		}
 	}
 }

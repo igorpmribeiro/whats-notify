@@ -15,7 +15,7 @@ class EvolutionWhatsAppProvider extends IWhatsAppProvider {
   async sendMessage(to, message) {
     try {
       const response = await this.evolutionApiClient.sendWhatsAppMessage(to, message);
-      console.log(`WhatsApp message sent to ${to}: ${message}`);
+      // Log removido - já é feito no notification.service
       return response;
     } catch (error) {
       console.error('Error sending WhatsApp message:', error);
@@ -33,7 +33,6 @@ class ChatProWhatsAppProvider extends IWhatsAppProvider {
   async sendMessage(to, message) {
     try {
       const response = await this.chatProClient.sendMessage(to, message);
-      console.log(`WhatsApp message sent to ${to}: ${message}`);
       return response;
     } catch (error) {
       console.error('Error sending WhatsApp message:', error);
