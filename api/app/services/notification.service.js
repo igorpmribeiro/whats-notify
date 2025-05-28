@@ -49,7 +49,9 @@ class WhatsNotificationService extends INotificationService {
 			// Verificar se é mensagem duplicada
 			if (this.isDuplicateMessage(messageHash)) {
 				if (process.env.NODE_ENV !== 'production') {
-					console.log(`🚫 Duplicate message detected for ${phoneNumber.slice(-4)} - skipping`);
+					console.log(
+						`🚫 Duplicate message detected for ${phoneNumber.slice(-4)} - skipping`,
+					);
 				}
 				return { success: true, skipped: true, reason: 'duplicate' };
 			}
@@ -70,9 +72,11 @@ class WhatsNotificationService extends INotificationService {
 
 			// Log otimizado apenas em desenvolvimento
 			if (process.env.NODE_ENV !== 'production') {
-				console.log(`✅ Message sent to ${phoneNumber.slice(-4)}: ${message.substring(0, 30)}...`);
+				console.log(
+					`✅ Message sent to ${phoneNumber.slice(-4)}: ${message.substring(0, 30)}...`,
+				);
 			}
-			
+
 			return result;
 		} catch (error) {
 			console.error('Error sending WhatsApp notification:', error);

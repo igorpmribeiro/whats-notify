@@ -110,7 +110,9 @@ class AppSetup {
 		try {
 			const status = await this.evolutionApiClient.getInstanceStatus();
 			if (process.env.NODE_ENV !== 'production') {
-				console.log(`📱 Evolution API Status: ${status.instance?.connectionStatus || 'Unknown'}`);
+				console.log(
+					`📱 Evolution API Status: ${status.instance?.connectionStatus || 'Unknown'}`,
+				);
 			}
 		} catch (error) {
 			if (process.env.NODE_ENV !== 'production') {
@@ -129,13 +131,13 @@ class AppSetup {
 				phoneNumber,
 				message,
 			);
-			
+
 			if (result.success && !result.skipped) {
 				console.log('✅ Test message sent successfully!');
 			} else if (result.skipped) {
 				console.log('⚠️ Test message skipped (duplicate or recently sent)');
 			}
-			
+
 			return result;
 		} catch (error) {
 			console.error('❌ Failed to send test message:', error.message);

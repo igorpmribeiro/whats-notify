@@ -16,11 +16,11 @@ class OrderService {
 	isRecentlyProcessed(processKey) {
 		const now = Date.now();
 		const lastProcessed = this.processedOrders.get(processKey);
-		
+
 		if (lastProcessed && now - lastProcessed < this.cacheTimeout) {
 			return true;
 		}
-		
+
 		// Limpar entradas antigas
 		if (this.processedOrders.size > 100) {
 			for (const [key, timestamp] of this.processedOrders.entries()) {
@@ -29,7 +29,7 @@ class OrderService {
 				}
 			}
 		}
-		
+
 		return false;
 	}
 
@@ -38,27 +38,37 @@ class OrderService {
 			// Extract phone information
 			const phoneData = customer.phone[0];
 			const fullPhoneNumber = `55${phoneData.ddd}${phoneData.number}`;
-		// Verificar se este pedido/status já foi processado recentemente
-		const processKey = this.generateProcessKey(orderId, status.label, fullPhoneNumber);
-		if (this.isRecentlyProcessed(processKey)) {
-			console.log(`⚠️ Order ${orderId} with status "${status.label}" already processed recently - skipping`);
-			return { success: true, skipped: true, reason: 'recently_processed' };
-		}
+			// Verificar se este pedido/status já foi processado recentemente
+			const processKey = this.generateProcessKey(
+				orderId,
+				status.label,
+				fullPhoneNumber,
+			);
+			if (this.isRecentlyProcessed(processKey)) {
+				console.log(
+					`⚠️ Order ${orderId} with status "${status.label}" already processed recently - skipping`,
+				);
+				return { success: true, skipped: true, reason: 'recently_processed' };
+			}
 
-		// Não enviar mensagem para pedidos cancelados
-		if (status.label === 'CANCELADO') {
-			console.log(`⚠️ Order ${orderId} with status "CANCELADO" - not sending notification`);
-			return { success: true, skipped: true, reason: 'status_cancelado' };
-		}
+			// Não enviar mensagem para pedidos cancelados
+			if (status.label === 'CANCELADO') {
+				console.log(
+					`⚠️ Order ${orderId} with status "CANCELADO" - not sending notification`,
+				);
+				return { success: true, skipped: true, reason: 'status_cancelado' };
+			}
 
-		// Log simplificado apenas em desenvolvimento
-		if (process.env.NODE_ENV !== 'production') {
-			console.log(`📋 Processing: Order #${orderId} | Status: ${status.label} | Customer: ${customer.name}`);
-		}
+			// Log simplificado apenas em desenvolvimento
+			if (process.env.NODE_ENV !== 'production') {
+				console.log(
+					`📋 Processing: Order #${orderId} | Status: ${status.label} | Customer: ${customer.name}`,
+				);
+			}
 
 			// Get Product Name
 			const productName = await this.productService.getProductName(orderId);
-			
+
 			// Create personalized message based on status label
 			const message = this.createStatusMessage(
 				orderId,

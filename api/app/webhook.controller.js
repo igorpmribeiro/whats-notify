@@ -51,7 +51,10 @@ class WebhookController {
 
 			return res.status(200).json(response);
 		} catch (error) {
-			console.error(`❌ Webhook error for order ${req.body.orderId}:`, error.message);
+			console.error(
+				`❌ Webhook error for order ${req.body.orderId}:`,
+				error.message,
+			);
 			return res.status(500).json({ error: 'Internal server error' });
 		}
 	}

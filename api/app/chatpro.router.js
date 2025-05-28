@@ -199,12 +199,10 @@ const createChatProRouter = (chatProClient) => {
 
 			res.send(htmlPage);
 		} catch (error) {
-			res
-				.status(500)
-				.json({
-					error: 'Failed to generate QR code display',
-					details: error.message,
-				});
+			res.status(500).json({
+				error: 'Failed to generate QR code display',
+				details: error.message,
+			});
 		}
 	});
 

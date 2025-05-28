@@ -1,17 +1,28 @@
 import axios from 'axios';
+import { kv } from '@vercel/kv';
 
 class CustomerApiClient {
 	constructor(baseUrl, apiKey, storeId) {
 		this.baseUrl = 'https://www.rufer.com.br/ws/v1/';
 		this.apiKey = apiKey;
 		this.storeId = storeId;
-		this.cachedToken = null;
+		this.tokenKey = `token:${this.storeId}`;
 	}
 
 	async getAccessToken(forceRefresh = false) {
-		// Se já temos um token em cache e não estamos forçando refresh, retorna o cached
-		if (this.cachedToken && !forceRefresh) {
-			return this.cachedToken;
+		// Check KV first
+		if (!forceRefresh) {
+			try {
+				const cachedToken = await kv.get(this.tokenKey);
+				if (cachedToken) {
+					if (process.env.NODE_ENV !== 'production') {
+						console.log(`🔑 Using cached token for store ${this.storeId}`);
+					}
+					return cachedToken;
+				}
+			} catch (error) {
+				console.error('Error accessing KV store:', error);
+			}
 		}
 
 		try {
@@ -29,17 +40,27 @@ class CustomerApiClient {
 
 			const response = await axios(options);
 			if (response.status === 200) {
-				this.cachedToken = response.data.token;
+				const token = response.data.token;
+
+				try {
+					await kv.setex(this.tokenKey, 900, token);
+				} catch (error) {
+					console.error('Error saving token to KV store:', error);
+				}
 				if (process.env.NODE_ENV !== 'production') {
 					console.log(`🔑 Token obtained for store ${this.storeId}`);
 				}
-				return this.cachedToken;
+				return token;
 			} else if (response.status === 403) {
 				if (process.env.NODE_ENV !== 'production') {
 					console.log('⚠️ Access Token already exists for this store');
 				}
-				if (this.cachedToken) {
-					return this.cachedToken;
+				const cachedToken = await kv.get(this.tokenKey);
+				if (cachedToken) {
+					if (process.env.NODE_ENV !== 'production') {
+						console.log(`🔑 Using cached token for store ${this.storeId}`);
+					}
+					return cachedToken;
 				}
 				throw new Error(
 					'Access Token already exists for this store and no cached token available',
