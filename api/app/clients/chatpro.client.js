@@ -41,7 +41,7 @@ class ChatProClient {
         },
       };
       const response = await axios(options);
-      return response.data;
+      return response.data.connected;
     } catch (error) {
       console.error('Error fetching message status:', error);
       throw error;

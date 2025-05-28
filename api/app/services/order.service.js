@@ -1,6 +1,7 @@
 class OrderService {
-	constructor(notificationService) {
+	constructor(notificationService, ProductService) {
 		this.notificationService = notificationService;
+		this.productService = ProductService;
 	}
 
 	async processOrderStatusUpdate(orderId, status, customer) {
@@ -12,8 +13,10 @@ class OrderService {
 			// Log processing information
 			console.log(`Processing order ID: ${orderId}, Status: ${status.label}, Customer: ${customer.name}, Phone: ${fullPhoneNumber}`);
 
-			// Create personalized message based on status label
-			const message = this.createStatusMessage(orderId, status.label, customer.name);
+			// Get Product Name
+			const productName = await this.productService.getProductName(orderId);
+		// Create personalized message based on status label
+		const message = this.createStatusMessage(orderId, status.label, customer.name, productName);
 
 			// Notify the customer about the order status update
 			await this.notificationService.sendWhatsAppNotification(fullPhoneNumber, message);
@@ -23,20 +26,88 @@ class OrderService {
 		}
 	}
 
-	createStatusMessage(orderId, statusLabel, customerName) {
+	// Helper function to format product names nicely
+	formatProductNames(productNames) {
+		if (!productNames || productNames.length === 0) {
+			return 'seus produtos';
+		}
+		
+		if (productNames.length === 1) {
+			return `"${productNames[0]}"`;
+		}
+		
+		if (productNames.length === 2) {
+			return `"${productNames[0]}" e "${productNames[1]}"`;
+		}
+		
+		// For 3 or more products, use a bullet list format
+		const productList = productNames.map(product => `• ${product}`).join('\n');
+		return `\n${productList}`;
+	}
+
+	createStatusMessage(orderId, statusLabel, customerName, productName) {
 		const greeting = customerName ? `Olá ${customerName}! ` : 'Olá! ';
+		const formattedProducts = this.formatProductNames(productName);
 		
 		const statusMessages = {
-			'Pendente': `🕐 ${greeting}Seu pedido #${orderId} está pendente e será processado em breve.`,
-			'Aprovado': `✅ ${greeting}Seu pedido #${orderId} foi confirmado! Obrigado pela preferência.`,
-			'Em preparo': `👨‍🍳 ${greeting}Seu pedido #${orderId} está sendo preparado com carinho.`,
-			'Enviado': `🎉 ${greeting}Seu pedido #${orderId} já foi enviado e será entregue em sua residência em até 3 dias úteis.`,
-			'Entregue': `📦 ${greeting}Seu pedido #${orderId} foi entregue. Esperamos que goste!`,
-			'Cancelado': `❌ ${greeting}Seu pedido #${orderId} foi cancelado. Entre em contato conosco se tiver dúvidas.`,
-			'Reservado': `📅 ${greeting}Seu pedido #${orderId} foi reservado e já aguarda pela sua retirada. Obrigado!`
+			'RESERVADO': `📋 ${greeting}Sua reserva foi feita com sucesso!
+
+🔢 *Pedido:* #${orderId}
+📦 *Produto(s):* ${formattedProducts}
+
+⏰ O produto ficará reservado até o próximo dia útil.
+📞 Para cancelar a reserva, entre em contato pelo WhatsApp.
+
+⚠️ *ATENÇÃO: Produtos reservados e não retirados nos impedem de atender outros lojistas.*`,
+
+			'AGUARDANDO PAGAMENTO': `🕦 ${greeting}Seu pedido foi recebido e está aguardando o pagamento.
+
+🔢 *Pedido:* #${orderId}
+📦 *Produto(s):* ${formattedProducts}
+💰 *Status:* Aguardando pagamento`,
+
+			'PAGO': `✅ ${greeting}Seu pedido teve o pagamento confirmado!
+
+🔢 *Pedido:* #${orderId}
+📦 *Produto(s):* ${formattedProducts}
+💚 *Status:* Pagamento confirmado`,
+
+			'PEDIDO RETIRADO': `🎉 ${greeting}Seu pedido já foi retirado. Agradecemos pela preferência!
+
+🔢 *Pedido:* #${orderId}
+📦 *Produto(s):* ${formattedProducts}
+✅ *Status:* Retirado com sucesso`,
+
+			'EM ASSISTÊNCIA': `🛠️ ${greeting}Seu pedido encontra-se em assistência.
+
+🔢 *Pedido:* #${orderId}
+📦 *Produto(s):* ${formattedProducts}
+🔧 *Status:* Em assistência técnica
+
+📞 Caso precise falar com o nosso setor de assistência, entre em contato pelo WhatsApp (21) 99756-7219`,
+
+			'RESERVA CONFIRMADA': `🎉 ${greeting}Seu pedido está com a reserva confirmada!
+
+🔢 *Pedido:* #${orderId}
+📦 *Produto(s):* ${formattedProducts}
+✅ *Status:* Reserva confirmada
+
+📞 Para cancelar a reserva, entre em contato pelo WhatsApp.
+
+⚠️ *ATENÇÃO: Produtos reservados e não retirados nos impedem de atender outros lojistas.*`,
+
+			'Cancelado': `❌ ${greeting}Seu pedido foi cancelado.
+
+🔢 *Pedido:* #${orderId}
+📦 *Produto(s):* ${formattedProducts}
+🚫 *Status:* Cancelado`
 		};
 
-		return statusMessages[statusLabel] || `📋 ${greeting} Seu pedido ${orderId} foi atualizado e o novo status dele é ${statusLabel}`;
+		return statusMessages[statusLabel] || `📋 ${greeting}Seu pedido foi atualizado!
+
+🔢 *Pedido:* #${orderId}
+📦 *Produto(s):* ${formattedProducts}
+🔄 *Novo status:* ${statusLabel}`;
 	}
 }
 

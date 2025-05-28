@@ -166,3 +166,8 @@ build/
 # PM2
 .pm2/
 .vercel
+
+DEPLOY.md
+
+# Token files - não versionar tokens de autenticação
+.token-*.json
