@@ -49,8 +49,8 @@ class CustomerApiClient {
 				const token = response.data.token;
 
 				try {
-					// Store in Redis with 15 minutes TTL (900 seconds)
-					await this.redis.setex(this.tokenKey, 900, token);
+					// Store in Redis with 1 hour TTL (3600 seconds)
+					await this.redis.setex(this.tokenKey, 3600, token);
 				} catch (error) {
 					console.error('Error saving token to Redis store:', error);
 				}
