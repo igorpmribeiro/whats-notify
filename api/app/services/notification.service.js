@@ -10,13 +10,13 @@ class WhatsNotificationService extends INotificationService {
 		this.whatsAppClient = whatsAppClient;
 		// Cache para evitar mensagens duplicadas
 		this.sentMessages = new Map();
-		this.messageTimeout = 30000; // 30 segundos
+		this.messageTimeout = 300000; // 300 segundos
 	}
 
 	// Gerar hash da mensagem para evitar duplicatas
 	generateMessageHash(phoneNumber, message) {
 		const content = `${phoneNumber}:${message}`;
-		return content.length + '_' + content.slice(0, 50).replace(/\s/g, '');
+		return `${content.length}_${content.slice(0, 50).replace(/\s/g, '')}`;
 	}
 
 	// Verificar se a mensagem já foi enviada recentemente
