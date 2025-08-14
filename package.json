@@ -19,7 +19,7 @@
     "axios": "^1.9.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
-    "vercel": "^41.0.2"
+    "vercel": "^45.0.8"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4"

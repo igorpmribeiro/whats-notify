@@ -15,6 +15,26 @@ const createWebhookRouter = (webhookController) => {
 		});
 	});
 
+	// Rota para verificar estatísticas dos caches (prevenção de duplicatas)
+	router.get('/cache-stats', (req, res) => {
+		try {
+			const orderStats = webhookController.orderService.getCacheStats();
+			const notificationStats = webhookController.orderService.notificationService.getCacheStats();
+			
+			res.status(200).json({
+				message: 'Cache statistics',
+				timestamp: new Date().toISOString(),
+				orderCache: orderStats,
+				messageCache: notificationStats,
+			});
+		} catch (error) {
+			res.status(500).json({
+				error: 'Failed to retrieve cache statistics',
+				message: error.message,
+			});
+		}
+	});
+
 	return router;
 };
 
