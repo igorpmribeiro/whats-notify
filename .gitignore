@@ -155,10 +155,6 @@ qr-codes/
 session-data/
 whatsapp-session/
 
-# Evolution API specific
-evolution-sessions/
-evolution-store/
-
 # Production files
 dist/
 build/

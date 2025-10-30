@@ -1,8 +1,6 @@
 import config from './config/index.js';
-import { EvolutionApiClient } from './clients/evolution.client.js';
 import { ChatProClient } from './clients/chatpro.client.js';
 import { CustomerApiClient } from './clients/storeapi.client.js';
-import { EvolutionWhatsAppProvider } from './providers/whatsapp.provider.js';
 import { ChatProWhatsAppProvider } from './providers/whatsapp.provider.js';
 import { WhatsNotificationService } from './services/notification.service.js';
 import { OrderService } from './services/order.service.js';
@@ -11,11 +9,9 @@ import { WebhookController } from './webhook.controller.js';
 
 class AppSetup {
 	constructor() {
-		this.evolutionApiClient = null;
 		this.chatProClient = null;
 		this.customerApiClient = null;
 		this.chatProWhatsAppProvider = null;
-		this.whatsAppProvider = null;
 		this.notificationService = null;
 		this.productService = null;
 		this.orderService = null;
@@ -27,14 +23,7 @@ class AppSetup {
 			// Verificar se as configurações necessárias estão presentes
 			this.validateConfig();
 
-			// Criar o cliente da Evolution API
-			this.evolutionApiClient = new EvolutionApiClient(
-				config.evolutionApi.baseUrl,
-				config.evolutionApi.apiKey,
-				config.evolutionApi.instanceName,
-			);
-
-			//Criar o cliente do ChatPro API
+			// Criar o cliente do ChatPro API
 			this.chatProClient = new ChatProClient(
 				config.chatPro.baseUrl,
 				config.chatPro.instanceId,
@@ -48,16 +37,10 @@ class AppSetup {
 				config.customerApi.storeId,
 			);
 
-			// Criar o provider da Evolution WhatsApp
-			// this.whatsAppProvider = new EvolutionWhatsAppProvider(this.evolutionApiClient);
-
 			// Criar o provider do ChatPro WhatsApp
 			this.chatProWhatsAppProvider = new ChatProWhatsAppProvider(
 				this.chatProClient,
 			);
-
-			// Criar o serviço de notificação com Evolution API
-			// this.notificationService = new WhatsNotificationService(this.whatsAppProvider);
 
 			// Criar o serviço de notificação com ChatPro API
 			this.notificationService = new WhatsNotificationService(
@@ -79,10 +62,8 @@ class AppSetup {
 			console.log('🚀 WhatsApp Notify services initialized successfully!');
 
 			return {
-				// evolutionApiClient: this.evolutionApiClient,
 				chatProClient: this.chatProClient,
 				customerApiClient: this.customerApiClient,
-				whatsAppProvider: this.whatsAppProvider,
 				chatProWhatsAppProvider: this.chatProWhatsAppProvider,
 				notificationService: this.notificationService,
 				productService: this.productService,
@@ -96,28 +77,24 @@ class AppSetup {
 	}
 
 	validateConfig() {
-		const required = ['baseUrl', 'apiKey', 'instanceName'];
-		const missing = required.filter((key) => !config.evolutionApi[key]);
+		// Validar configuração do ChatPro
+		const chatProRequired = ['baseUrl', 'instanceId', 'apiKey'];
+		const chatProMissing = chatProRequired.filter((key) => !config.chatPro[key]);
 
-		if (missing.length > 0) {
+		if (chatProMissing.length > 0) {
 			throw new Error(
-				`Missing Evolution API configuration: ${missing.join(', ')}`,
+				`Missing ChatPro API configuration: ${chatProMissing.join(', ')}`,
 			);
 		}
-	}
 
-	async checkEvolutionApiStatus() {
-		try {
-			const status = await this.evolutionApiClient.getInstanceStatus();
-			if (process.env.NODE_ENV !== 'production') {
-				console.log(
-					`📱 Evolution API Status: ${status.instance?.connectionStatus || 'Unknown'}`,
-				);
-			}
-		} catch (error) {
-			if (process.env.NODE_ENV !== 'production') {
-				console.warn('⚠️ Could not check Evolution API status:', error.message);
-			}
+		// Validar configuração da API do Cliente
+		const customerApiRequired = ['baseUrl', 'apiKey', 'storeId'];
+		const customerApiMissing = customerApiRequired.filter((key) => !config.customerApi[key]);
+
+		if (customerApiMissing.length > 0) {
+			throw new Error(
+				`Missing Customer API configuration: ${customerApiMissing.join(', ')}`,
+			);
 		}
 	}
 
