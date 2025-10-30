@@ -1,33 +1,37 @@
 import axios from 'axios';
-import { Redis } from '@upstash/redis';
+import { createClient } from '@supabase/supabase-js';
 
 class CustomerApiClient {
 	constructor(baseUrl, apiKey, storeId) {
 		this.baseUrl = 'https://www.rufer.com.br/ws/v1/';
 		this.apiKey = apiKey;
 		this.storeId = storeId;
-		this.tokenKey = `token:${this.storeId}`;
 
-		// Initialize Redis client
-		this.redis = new Redis({
-			url: process.env.UPSTASH_REDIS_REST_KV_REST_API_URL,
-			token: process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN,
-		});
+		// Initialize Supabase client
+		this.supabase = createClient(
+			process.env.NEXT_PUBLIC_SUPABASE_URL,
+			process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+		);
 	}
 
 	async getAccessToken(forceRefresh = false) {
-		// Check Redis first
+		// Check Supabase first
 		if (!forceRefresh) {
 			try {
-				const cachedToken = await this.redis.get(this.tokenKey);
-				if (cachedToken) {
+				const { data, error } = await this.supabase
+					.from('api_tokens')
+					.select('access_token')
+					.eq('store_id', this.storeId)
+					.single();
+
+				if (!error && data) {
 					if (process.env.NODE_ENV !== 'production') {
 						console.log(`🔑 Using cached token for store ${this.storeId}`);
 					}
-					return cachedToken;
+					return data.access_token;
 				}
 			} catch (error) {
-				console.error('Error accessing Redis store:', error);
+				console.error('Error accessing Supabase store:', error);
 			}
 		}
 
@@ -49,10 +53,19 @@ class CustomerApiClient {
 				const token = response.data.token;
 
 				try {
-					// Store in Redis with 1 hour TTL (3600 seconds)
-					await this.redis.setex(this.tokenKey, 3600, token);
+					// Use upsert without onConflict option - it will use the primary key or unique constraints automatically
+					const { error } = await this.supabase
+						.from('api_tokens')
+						.upsert({
+							store_id: this.storeId,
+							access_token: token,
+						});
+
+					if (error) {
+						console.error('Error saving token to Supabase:', error);
+					}
 				} catch (error) {
-					console.error('Error saving token to Redis store:', error);
+					console.error('Error saving token to Supabase store:', error);
 				}
 				if (process.env.NODE_ENV !== 'production') {
 					console.log(`🔑 Token obtained for store ${this.storeId}`);
@@ -62,12 +75,17 @@ class CustomerApiClient {
 				if (process.env.NODE_ENV !== 'production') {
 					console.log('⚠️ Access Token already exists for this store');
 				}
-				const cachedToken = await this.redis.get(this.tokenKey);
-				if (cachedToken) {
+				const { data, error } = await this.supabase
+					.from('api_tokens')
+					.select('access_token, expires_at')
+					.eq('store_id', this.storeId)
+					.single();
+
+				if (!error && data && new Date(data.expires_at) > new Date()) {
 					if (process.env.NODE_ENV !== 'production') {
 						console.log(`🔑 Using cached token for store ${this.storeId}`);
 					}
-					return cachedToken;
+					return data.access_token;
 				}
 				throw new Error(
 					'Access Token already exists for this store and no cached token available',
