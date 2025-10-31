@@ -53,16 +53,47 @@ class CustomerApiClient {
 				const token = response.data.token;
 
 				try {
-					// Use upsert without onConflict option - it will use the primary key or unique constraints automatically
-					const { error } = await this.supabase
+					// Verificar se já existe um registro para esta loja
+					const { data: existingToken, error: selectError } = await this.supabase
 						.from('api_tokens')
-						.upsert({
-							store_id: this.storeId,
-							access_token: token,
-						});
+						.select('id')
+						.eq('store_id', this.storeId)
+						.single();
 
-					if (error) {
-						console.error('Error saving token to Supabase:', error);
+					if (selectError && selectError.code !== 'PGRST116') {
+						// PGRST116 = não encontrado, outros erros devem ser logados
+						console.error('Error checking existing token:', selectError);
+					}
+
+					if (existingToken) {
+						// Atualizar token existente
+						const { error: updateError } = await this.supabase
+							.from('api_tokens')
+							.update({
+								access_token: token,
+								updated_at: new Date().toISOString(),
+							})
+							.eq('store_id', this.storeId);
+
+						if (updateError) {
+							console.error('Error updating token in Supabase:', updateError);
+						} else if (process.env.NODE_ENV !== 'production') {
+							console.log(`♻️ Token updated for store ${this.storeId}`);
+						}
+					} else {
+						// Inserir novo token
+						const { error: insertError } = await this.supabase
+							.from('api_tokens')
+							.insert({
+								store_id: this.storeId,
+								access_token: token,
+							});
+
+						if (insertError) {
+							console.error('Error inserting token in Supabase:', insertError);
+						} else if (process.env.NODE_ENV !== 'production') {
+							console.log(`✨ New token created for store ${this.storeId}`);
+						}
 					}
 				} catch (error) {
 					console.error('Error saving token to Supabase store:', error);
