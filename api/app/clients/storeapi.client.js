@@ -15,7 +15,7 @@ class CustomerApiClient {
 	}
 
 	async getAccessToken(forceRefresh = false) {
-		// Check Supabase first
+		// 1. Tentar usar token armazenada no Supabase (se não for forceRefresh)
 		if (!forceRefresh) {
 			try {
 				const { data, error } = await this.supabase
@@ -24,7 +24,7 @@ class CustomerApiClient {
 					.eq('store_id', this.storeId)
 					.single();
 
-				if (!error && data) {
+				if (!error && data?.access_token) {
 					if (process.env.NODE_ENV !== 'production') {
 						console.log(`🔑 Using cached token for store ${this.storeId}`);
 					}
@@ -35,6 +35,11 @@ class CustomerApiClient {
 			}
 		}
 
+		// 2. Se não tiver token armazenada ou forceRefresh, autenticar na API
+		return await this.authenticateAndStoreToken();
+	}
+
+	async authenticateAndStoreToken() {
 		try {
 			const credentials = Buffer.from(
 				`${this.storeId}:${this.apiKey}`,
@@ -49,82 +54,95 @@ class CustomerApiClient {
 			};
 
 			const response = await axios(options);
+			
 			if (response.status === 200) {
 				const token = response.data.token;
-
-				try {
-					// Verificar se já existe um registro para esta loja
-					const { data: existingToken, error: selectError } = await this.supabase
-						.from('api_tokens')
-						.select('id')
-						.eq('store_id', this.storeId)
-						.single();
-
-					if (selectError && selectError.code !== 'PGRST116') {
-						// PGRST116 = não encontrado, outros erros devem ser logados
-						console.error('Error checking existing token:', selectError);
-					}
-
-					if (existingToken) {
-						// Atualizar token existente
-						const { error: updateError } = await this.supabase
-							.from('api_tokens')
-							.update({
-								access_token: token,
-								updated_at: new Date().toISOString(),
-							})
-							.eq('store_id', this.storeId);
-
-						if (updateError) {
-							console.error('Error updating token in Supabase:', updateError);
-						} else if (process.env.NODE_ENV !== 'production') {
-							console.log(`♻️ Token updated for store ${this.storeId}`);
-						}
-					} else {
-						// Inserir novo token
-						const { error: insertError } = await this.supabase
-							.from('api_tokens')
-							.insert({
-								store_id: this.storeId,
-								access_token: token,
-							});
-
-						if (insertError) {
-							console.error('Error inserting token in Supabase:', insertError);
-						} else if (process.env.NODE_ENV !== 'production') {
-							console.log(`✨ New token created for store ${this.storeId}`);
-						}
-					}
-				} catch (error) {
-					console.error('Error saving token to Supabase store:', error);
-				}
+				await this.updateTokenInSupabase(token);
+				
 				if (process.env.NODE_ENV !== 'production') {
 					console.log(`🔑 Token obtained for store ${this.storeId}`);
 				}
 				return token;
-			} else if (response.status === 403) {
-				if (process.env.NODE_ENV !== 'production') {
-					console.log('⚠️ Access Token already exists for this store');
-				}
-				const { data, error } = await this.supabase
-					.from('api_tokens')
-					.select('access_token, expires_at')
-					.eq('store_id', this.storeId)
-					.single();
-
-				if (!error && data && new Date(data.expires_at) > new Date()) {
-					if (process.env.NODE_ENV !== 'production') {
-						console.log(`🔑 Using cached token for store ${this.storeId}`);
-					}
-					return data.access_token;
-				}
-				throw new Error(
-					'Access Token already exists for this store and no cached token available',
-				);
 			}
 		} catch (error) {
-			console.error('Error fetching access token:', error);
+			// Verificar se o erro 403 indica que a token já existe no servidor da API
+			if (error.response?.status === 403) {
+				const errorMessage = error.response?.data?.message || '';
+				
+				if (errorMessage === 'Access token already been created to this authentication.') {
+					// Token já existe no servidor, buscar do Supabase
+					if (process.env.NODE_ENV !== 'production') {
+						console.log('⚠️ Token already exists on API server, fetching from Supabase');
+					}
+					
+					const { data, error: supabaseError } = await this.supabase
+						.from('api_tokens')
+						.select('access_token')
+						.eq('store_id', this.storeId)
+						.single();
+
+					if (!supabaseError && data?.access_token) {
+						if (process.env.NODE_ENV !== 'production') {
+							console.log(`🔑 Using cached token for store ${this.storeId}`);
+						}
+						return data.access_token;
+					}
+					
+					throw new Error('Token already exists on API but not found in Supabase. Please contact support.');
+				}
+			}
+			
+			console.error('Error authenticating:', error.response?.data || error.message);
 			throw error;
+		}
+	}
+
+	async updateTokenInSupabase(token) {
+		try {
+			// Verificar se já existe um registro para esta loja
+			const { data: existingToken, error: selectError } = await this.supabase
+				.from('api_tokens')
+				.select('id')
+				.eq('store_id', this.storeId)
+				.single();
+
+			if (selectError && selectError.code !== 'PGRST116') {
+				// PGRST116 = não encontrado, outros erros devem ser logados
+				console.error('Error checking existing token:', selectError);
+			}
+
+			if (existingToken) {
+				// Atualizar token existente (NUNCA criar duplicado)
+				const { error: updateError } = await this.supabase
+					.from('api_tokens')
+					.update({
+						access_token: token,
+						updated_at: new Date().toISOString(),
+					})
+					.eq('store_id', this.storeId);
+
+				if (updateError) {
+					console.error('Error updating token in Supabase:', updateError);
+				} else if (process.env.NODE_ENV !== 'production') {
+					console.log(`♻️ Token updated for store ${this.storeId}`);
+				}
+			} else {
+				// Inserir novo token apenas se não existir
+				const { error: insertError } = await this.supabase
+					.from('api_tokens')
+					.insert({
+						store_id: this.storeId,
+						access_token: token,
+					});
+
+				if (insertError) {
+					console.error('Error inserting token in Supabase:', insertError);
+				} else if (process.env.NODE_ENV !== 'production') {
+					console.log(`✨ New token created for store ${this.storeId}`);
+				}
+			}
+		} catch (error) {
+			console.error('Error saving token to Supabase store:', error);
 		}
 	}
 
@@ -143,26 +161,33 @@ class CustomerApiClient {
 			const response = await axios(options);
 			return response.data.order.products;
 		} catch (error) {
-			if (error.response && error.response.status === 403) {
-				if (process.env.NODE_ENV !== 'production') {
-					console.log('🔄 Token expired, refreshing...');
-				}
-				try {
-					const newToken = await this.getAccessToken(true);
-					const retryOptions = {
-						method: 'GET',
-						url: `${this.baseUrl}order/${orderId}`,
-						headers: {
-							'access-token': newToken,
-							'Content-Type': 'application/json',
-						},
-					};
+			// Verificar se o erro é 403 (token inválida)
+			if (error.response?.status === 403) {
+				const errorMessage = error.response?.data?.message || '';
+				
+				// Token inválida ou expirada - tentar refresh
+				if (errorMessage === 'Access token is missing or invalid.') {
+					if (process.env.NODE_ENV !== 'production') {
+						console.log('🔄 Token invalid or expired, refreshing...');
+					}
+					
+					try {
+						const newToken = await this.getAccessToken(true);
+						const retryOptions = {
+							method: 'GET',
+							url: `${this.baseUrl}order/${orderId}`,
+							headers: {
+								'access-token': newToken,
+								'Content-Type': 'application/json',
+							},
+						};
 
-					const retryResponse = await axios(retryOptions);
-					return retryResponse.data.order.products;
-				} catch (retryError) {
-					console.error('Error after token refresh:', retryError);
-					throw retryError;
+						const retryResponse = await axios(retryOptions);
+						return retryResponse.data.order.products;
+					} catch (retryError) {
+						console.error('Error after token refresh:', retryError);
+						throw retryError;
+					}
 				}
 			}
 
