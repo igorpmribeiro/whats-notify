@@ -54,11 +54,11 @@ class CustomerApiClient {
 			};
 
 			const response = await axios(options);
-			
+
 			if (response.status === 200) {
 				const token = response.data.token;
 				await this.updateTokenInSupabase(token);
-				
+
 				if (process.env.NODE_ENV !== 'production') {
 					console.log(`🔑 Token obtained for store ${this.storeId}`);
 				}
@@ -68,13 +68,13 @@ class CustomerApiClient {
 			// Verificar se o erro 403 indica que a token já existe no servidor da API
 			if (error.response?.status === 403) {
 				const errorMessage = error.response?.data?.message || '';
-				
+
 				if (errorMessage === 'Access token already been created to this authentication.') {
 					// Token já existe no servidor, buscar do Supabase
 					if (process.env.NODE_ENV !== 'production') {
 						console.log('⚠️ Token already exists on API server, fetching from Supabase');
 					}
-					
+
 					const { data, error: supabaseError } = await this.supabase
 						.from('api_tokens')
 						.select('access_token')
@@ -87,11 +87,11 @@ class CustomerApiClient {
 						}
 						return data.access_token;
 					}
-					
+
 					throw new Error('Token already exists on API but not found in Supabase. Please contact support.');
 				}
 			}
-			
+
 			console.error('Error authenticating:', error.response?.data || error.message);
 			throw error;
 		}
@@ -99,47 +99,24 @@ class CustomerApiClient {
 
 	async updateTokenInSupabase(token) {
 		try {
-			// Verificar se já existe um registro para esta loja
-			const { data: existingToken, error: selectError } = await this.supabase
+			// Usar UPSERT para garantir que não há duplicatas
+			// onConflict: 'store_id' significa que se já existir um registro com o mesmo store_id,
+			// ele será atualizado ao invés de criar um novo
+			const { error } = await this.supabase
 				.from('api_tokens')
-				.select('id')
-				.eq('store_id', this.storeId)
-				.single();
+				.upsert({
+					store_id: this.storeId,
+					access_token: token,
+					updated_at: new Date().toISOString(),
+				}, {
+					onConflict: 'store_id',
+					ignoreDuplicates: false // Atualiza se existir
+				});
 
-			if (selectError && selectError.code !== 'PGRST116') {
-				// PGRST116 = não encontrado, outros erros devem ser logados
-				console.error('Error checking existing token:', selectError);
-			}
-
-			if (existingToken) {
-				// Atualizar token existente (NUNCA criar duplicado)
-				const { error: updateError } = await this.supabase
-					.from('api_tokens')
-					.update({
-						access_token: token,
-						updated_at: new Date().toISOString(),
-					})
-					.eq('store_id', this.storeId);
-
-				if (updateError) {
-					console.error('Error updating token in Supabase:', updateError);
-				} else if (process.env.NODE_ENV !== 'production') {
-					console.log(`♻️ Token updated for store ${this.storeId}`);
-				}
-			} else {
-				// Inserir novo token apenas se não existir
-				const { error: insertError } = await this.supabase
-					.from('api_tokens')
-					.insert({
-						store_id: this.storeId,
-						access_token: token,
-					});
-
-				if (insertError) {
-					console.error('Error inserting token in Supabase:', insertError);
-				} else if (process.env.NODE_ENV !== 'production') {
-					console.log(`✨ New token created for store ${this.storeId}`);
-				}
+			if (error) {
+				console.error('Error upserting token in Supabase:', error);
+			} else if (process.env.NODE_ENV !== 'production') {
+				console.log(`✅ Token saved for store ${this.storeId}`);
 			}
 		} catch (error) {
 			console.error('Error saving token to Supabase store:', error);
@@ -164,13 +141,13 @@ class CustomerApiClient {
 			// Verificar se o erro é 403 (token inválida)
 			if (error.response?.status === 403) {
 				const errorMessage = error.response?.data?.message || '';
-				
+
 				// Token inválida ou expirada - tentar refresh
 				if (errorMessage === 'Access token is missing or invalid.') {
 					if (process.env.NODE_ENV !== 'production') {
 						console.log('🔄 Token invalid or expired, refreshing...');
 					}
-					
+
 					try {
 						const newToken = await this.getAccessToken(true);
 						const retryOptions = {
