@@ -106,8 +106,7 @@ class CustomerApiClient {
 				.from('api_tokens')
 				.upsert({
 					store_id: this.storeId,
-					access_token: token,
-					updated_at: new Date().toISOString(),
+					access_token: token
 				}, {
 					onConflict: 'store_id',
 					ignoreDuplicates: false // Atualiza se existir
