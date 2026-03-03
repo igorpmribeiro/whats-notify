@@ -10,7 +10,7 @@ class CustomerApiClient {
 		// Initialize Supabase client
 		this.supabase = createClient(
 			process.env.NEXT_PUBLIC_SUPABASE_URL,
-			process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+			process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
 		);
 	}
 
@@ -69,10 +69,15 @@ class CustomerApiClient {
 			if (error.response?.status === 403) {
 				const errorMessage = error.response?.data?.message || '';
 
-				if (errorMessage === 'Access token already been created to this authentication.') {
+				if (
+					errorMessage ===
+					'Access token already been created to this authentication.'
+				) {
 					// Token já existe no servidor, buscar do Supabase
 					if (process.env.NODE_ENV !== 'production') {
-						console.log('⚠️ Token already exists on API server, fetching from Supabase');
+						console.log(
+							'⚠️ Token already exists on API server, fetching from Supabase',
+						);
 					}
 
 					const { data, error: supabaseError } = await this.supabase
@@ -88,11 +93,16 @@ class CustomerApiClient {
 						return data.access_token;
 					}
 
-					throw new Error('Token already exists on API but not found in Supabase. Please contact support.');
+					throw new Error(
+						'Token already exists on API but not found in Supabase. Please contact support.',
+					);
 				}
 			}
 
-			console.error('Error authenticating:', error.response?.data || error.message);
+			console.error(
+				'Error authenticating:',
+				error.response?.data || error.message,
+			);
 			throw error;
 		}
 	}
@@ -102,15 +112,16 @@ class CustomerApiClient {
 			// Usar UPSERT para garantir que não há duplicatas
 			// onConflict: 'store_id' significa que se já existir um registro com o mesmo store_id,
 			// ele será atualizado ao invés de criar um novo
-			const { error } = await this.supabase
-				.from('api_tokens')
-				.upsert({
+			const { error } = await this.supabase.from('api_tokens').upsert(
+				{
 					store_id: this.storeId,
-					access_token: token
-				}, {
+					access_token: token,
+				},
+				{
 					onConflict: 'store_id',
-					ignoreDuplicates: false // Atualiza se existir
-				});
+					ignoreDuplicates: false, // Atualiza se existir
+				},
+			);
 
 			if (error) {
 				console.error('Error upserting token in Supabase:', error);
@@ -119,6 +130,45 @@ class CustomerApiClient {
 			}
 		} catch (error) {
 			console.error('Error saving token to Supabase store:', error);
+		}
+	}
+
+	async getProductById(productId) {
+		try {
+			const token = await this.getAccessToken();
+			const options = {
+				method: 'GET',
+				url: `${this.baseUrl}product/${productId}`,
+				headers: {
+					'access-token': token,
+					'Content-Type': 'application/json',
+				},
+			};
+
+			const response = await axios(options);
+			return response.data;
+		} catch (error) {
+			if (error.response?.status === 403) {
+				const errorMessage = error.response?.data?.message || '';
+				if (errorMessage === 'Access token is missing or invalid.') {
+					if (process.env.NODE_ENV !== 'production') {
+						console.log('🔄 Token invalid or expired, refreshing...');
+					}
+					const newToken = await this.getAccessToken(true);
+					const retryOptions = {
+						method: 'GET',
+						url: `${this.baseUrl}product/${productId}`,
+						headers: {
+							'access-token': newToken,
+							'Content-Type': 'application/json',
+						},
+					};
+					const retryResponse = await axios(retryOptions);
+					return retryResponse.data;
+				}
+			}
+			console.error('Error fetching product by ID:', error);
+			throw error;
 		}
 	}
 
