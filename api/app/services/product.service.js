@@ -5,8 +5,8 @@ class ProductService {
 
 	async getProductNameById(productId) {
 		try {
-			const product = await this.customerApiClient.getProductById(productId);
-			return result.name;
+			const response = await this.customerApiClient.getProductById(productId);
+			return response?.result?.[0]?.name || `Produto #${productId}`;
 		} catch (error) {
 			console.error(
 				`Error fetching product name for ID ${productId}:`,
