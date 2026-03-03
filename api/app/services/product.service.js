@@ -6,9 +6,23 @@ class ProductService {
 	async getProductNameById(productId) {
 		try {
 			const response = await this.customerApiClient.getProductById(productId);
+			const product = response?.result?.[0];
+
+			if (product?.date_added) {
+				const today = new Date().toISOString().slice(0, 10);
+				const dateAdded = product.date_added.slice(0, 10);
+
+				if (dateAdded !== today) {
+					console.log(
+						`Product #${productId} was added on ${dateAdded}, not today (${today}). Skipping notification.`,
+					);
+					return null;
+				}
+			}
+
 			return {
-				name: response?.result?.[0]?.name || null,
-				url: response?.result?.[0]?.url || null,
+				name: product?.name || null,
+				url: product?.url || null,
 			};
 		} catch (error) {
 			console.error(

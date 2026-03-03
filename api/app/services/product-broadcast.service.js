@@ -68,6 +68,20 @@ class ProductBroadcastService {
 
 		// 1. Buscar nome do produto
 		const productData = await this.productService.getProductNameById(productId);
+
+		if (!productData) {
+			console.log(
+				`⏭️ Produto ID ${productId} não é de hoje. Broadcast cancelado.`,
+			);
+			return {
+				success: true,
+				sent: 0,
+				failed: 0,
+				total: 0,
+				skippedReason: 'not_added_today',
+			};
+		}
+
 		const productName = productData.name;
 		const productUrl =
 			productData.url || this.buildProductUrl(productName, productId);
