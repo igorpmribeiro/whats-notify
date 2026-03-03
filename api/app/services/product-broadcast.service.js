@@ -13,7 +13,7 @@ Olá {CUSTOMER_NAME}, temos uma novidade para você!
 
 Acabamos de adicionar um novo produto: *{PRODUCT_NAME}*
 
-Acesse nossa loja e confira! 🛒`;
+Acesse {PRODUCT_URL} e confira! 🛒`;
 
 /**
  * Delay entre envios de mensagem (em ms) para evitar bloqueio por spam.
@@ -30,11 +30,10 @@ class ProductBroadcastService {
 	/**
 	 * Monta a mensagem personalizada para o cliente.
 	 */
-	buildMessage(customerName, productName) {
-		return MESSAGE_TEMPLATE.replace(/{PRODUCT_NAME}/g, productName).replace(
-			/{CUSTOMER_NAME}/g,
-			customerName,
-		);
+	buildMessage(customerName, productName, productUrl) {
+		return MESSAGE_TEMPLATE.replace(/{PRODUCT_NAME}/g, productName)
+			.replace(/{CUSTOMER_NAME}/g, customerName)
+			.replace(/{PRODUCT_URL}/g, productUrl);
 	}
 
 	/**
@@ -42,6 +41,20 @@ class ProductBroadcastService {
 	 */
 	sleep(ms) {
 		return new Promise((resolve) => setTimeout(resolve, ms));
+	}
+
+	/**
+	 * Gera a URL do produto no padrão da plataforma.
+	 * Formato: https://www.rufer.com.br/nome-do-produto-pIdDoProduto
+	 */
+	buildProductUrl(productName, productId) {
+		const slug = productName
+			.toLowerCase()
+			.normalize('NFD')
+			.replace(/\p{Diacritic}/gv, '') // remove acentos
+			.replace(/[^a-z0-9]+/g, '-') // substitui caracteres especiais por hífen
+			.replace(/^-|-$/g, ''); // remove hífens do início/fim
+		return `https://www.rufer.com.br/${slug}-p${productId}`;
 	}
 
 	/**
@@ -54,8 +67,11 @@ class ProductBroadcastService {
 		console.log(`📦 Iniciando broadcast para produto ID: ${productId}`);
 
 		// 1. Buscar nome do produto
-		const productName = await this.productService.getProductNameById(productId);
-		console.log(`📦 Produto: ${productName}`);
+		const productData = await this.productService.getProductNameById(productId);
+		const productName = productData.name;
+		const productUrl =
+			productData.url || this.buildProductUrl(productName, productId);
+		console.log(`📦 Produto: ${productName}, URL: ${productUrl}`);
 
 		// 2. Buscar clientes do Supabase
 		const clients = await this.supabaseClient.getRuferClients();
@@ -88,6 +104,7 @@ class ProductBroadcastService {
 				const message = this.buildMessage(
 					customer_name || 'Cliente',
 					productName,
+					productUrl,
 				);
 				const result = await this.notificationService.sendWhatsAppNotification(
 					customer_phone,
