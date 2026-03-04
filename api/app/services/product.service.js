@@ -15,7 +15,7 @@ class ProductService {
 					? product.last_modified.slice(0, 10)
 					: null;
 
-				if (dateAdded !== today && lastModified == null) {
+				if (dateAdded !== today && lastModified !== null) {
 					console.log(
 						`Product #${productId} was added on ${dateAdded}, not today (${today}). Skipping notification.`,
 					);
