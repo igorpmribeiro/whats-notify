@@ -11,7 +11,9 @@ class ProductService {
 			if (product?.date_added) {
 				const today = new Date().toISOString().slice(0, 10);
 				const dateAdded = product.date_added.slice(0, 10);
-				const lastModified = product.last_modified;
+				const lastModified = product.last_modified
+					? product.last_modified.slice(0, 10)
+					: null;
 
 				if (dateAdded !== today && lastModified == null) {
 					console.log(
