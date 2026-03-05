@@ -20,7 +20,7 @@ class ProductService {
 			const dateAdded = product.date_added.slice(0, 10);
 
 			const isToday = dateAdded === today;
-			const isNewProduct = product.last_modified === null;
+			const isNewProduct = product.last_modified == null;
 
 			if (!isToday || !isNewProduct) {
 				console.log(
