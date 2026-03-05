@@ -8,20 +8,18 @@ class ProductService {
 			const response = await this.customerApiClient.getProductById(productId);
 			const product = response?.result?.[0];
 
-			if (product?.date_added) {
-				const now = new Date();
-				const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-				const dateAdded = product.date_added.slice(0, 10);
+			const now = new Date();
+			const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+			const dateAdded = product.date_added.slice(0, 10);
 
-				const isToday = dateAdded === today;
-				const isNewProduct = product.last_modified === null;
+			const isToday = dateAdded === today;
+			const isNewProduct = product.last_modified === null;
 
-				if (!isToday || !isNewProduct) {
-					console.log(
-						`Product #${productId} skipped — date_added: ${dateAdded}, today: ${today}, last_modified: ${product.last_modified ?? 'null'}.`,
-					);
-					return null;
-				}
+			if (!isToday || !isNewProduct) {
+				console.log(
+					`Product #${productId} skipped — date_added: ${dateAdded}, today: ${today}, last_modified: ${product.last_modified ?? 'null'}.`,
+				);
+				return null;
 			}
 
 			return {
