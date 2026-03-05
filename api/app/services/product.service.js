@@ -8,6 +8,13 @@ class ProductService {
 			const response = await this.customerApiClient.getProductById(productId);
 			const product = response?.result?.[0];
 
+			if (!product || !product.date_added) {
+				console.log(
+					`Product #${productId} has no date_added. Skipping notification.`,
+				);
+				return null;
+			}
+
 			const now = new Date();
 			const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 			const dateAdded = product.date_added.slice(0, 10);
@@ -23,18 +30,15 @@ class ProductService {
 			}
 
 			return {
-				name: product?.name || null,
-				url: product?.url || null,
+				name: product.name || null,
+				url: product.url || null,
 			};
 		} catch (error) {
 			console.error(
 				`Error fetching product name for ID ${productId}:`,
 				error.message,
 			);
-			return {
-				name: `Produto #${productId}`,
-				url: null,
-			};
+			return null;
 		}
 	}
 
