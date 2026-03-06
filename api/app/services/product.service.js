@@ -22,7 +22,7 @@ class ProductService {
 			const isToday = dateAdded === today;
 			const isNewProduct = product.last_modified == null;
 
-			if (!isToday || !isNewProduct) {
+			if (!isToday && !isNewProduct) {
 				console.log(
 					`Product #${productId} skipped — date_added: ${dateAdded}, today: ${today}, last_modified: ${product.last_modified ?? 'null'}.`,
 				);
