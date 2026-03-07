@@ -3,6 +3,19 @@ class ProductService {
 		this.customerApiClient = customerApiClient;
 	}
 
+	formatDateOnly(dateValue) {
+		if (!dateValue) {
+			return null;
+		}
+
+		return String(dateValue).slice(0, 10);
+	}
+
+	getTodayDate() {
+		const now = new Date();
+		return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+	}
+
 	async getProductNameById(productId) {
 		try {
 			const response = await this.customerApiClient.getProductById(productId);
@@ -15,14 +28,12 @@ class ProductService {
 				return null;
 			}
 
-			const now = new Date();
-			const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-			const dateAdded = product.date_added.slice(0, 10);
+			const today = this.getTodayDate();
+			const dateAdded = this.formatDateOnly(product.date_added);
 
 			const isToday = dateAdded === today;
-			const isNewProduct = product.last_modified === null;
 
-			if (!isToday && !isNewProduct) {
+			if (!isToday) {
 				console.log(
 					`Product #${productId} skipped — date_added: ${dateAdded}, today: ${today}, last_modified: ${product.last_modified ?? 'null'}.`,
 				);
@@ -32,6 +43,8 @@ class ProductService {
 			return {
 				name: product.name || null,
 				url: product.url || null,
+				dateAdded: product.date_added || null,
+				lastModified: product.last_modified || null,
 			};
 		} catch (error) {
 			console.error(

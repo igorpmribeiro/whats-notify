@@ -139,9 +139,15 @@ class CustomerApiClient {
 			const options = {
 				method: 'GET',
 				url: `${this.baseUrl}product/${productId}`,
+				params: {
+					_ts: Date.now(),
+				},
 				headers: {
 					'access-token': token,
 					'Content-Type': 'application/json',
+					'Cache-Control': 'no-cache, no-store, must-revalidate',
+					Pragma: 'no-cache',
+					Expires: '0',
 				},
 			};
 
@@ -158,9 +164,15 @@ class CustomerApiClient {
 					const retryOptions = {
 						method: 'GET',
 						url: `${this.baseUrl}product/${productId}`,
+						params: {
+							_ts: Date.now(),
+						},
 						headers: {
 							'access-token': newToken,
 							'Content-Type': 'application/json',
+							'Cache-Control': 'no-cache, no-store, must-revalidate',
+							Pragma: 'no-cache',
+							Expires: '0',
 						},
 					};
 					const retryResponse = await axios(retryOptions);

@@ -66,7 +66,7 @@ class ProductBroadcastService {
 	async broadcastNewProduct(productId) {
 		console.log(`📦 Iniciando broadcast para produto ID: ${productId}`);
 
-		// 1. Buscar nome do produto
+		// 1. Buscar dados do produto
 		const productData = await this.productService.getProductNameById(productId);
 
 		if (!productData) {
@@ -85,90 +85,151 @@ class ProductBroadcastService {
 		const productName = productData.name;
 		const productUrl =
 			productData.url || this.buildProductUrl(productName, productId);
-		console.log(`📦 Produto: ${productName}, URL: ${productUrl}`);
 
-		// 2. Buscar clientes do Supabase
-		const clients = await this.supabaseClient.getRuferClients();
+		const broadcastLock = await this.supabaseClient.tryStartProductBroadcast({
+			productId,
+			name: productName,
+			url: productUrl,
+			dateAdded: productData.dateAdded,
+			lastModified: productData.lastModified,
+		});
 
-		if (!clients || clients.length === 0) {
-			console.log('⚠️ Nenhum cliente encontrado na tabela rufer_clients');
-			return { success: true, sent: 0, failed: 0, total: 0 };
+		if (!broadcastLock.acquired) {
+			console.log(
+				`⏭️ Produto ID ${productId} já possui broadcast registrado com status ${broadcastLock.reason}.`,
+			);
+			return {
+				success: true,
+				sent: 0,
+				failed: 0,
+				total: 0,
+				skippedReason: 'already_broadcasted',
+			};
 		}
 
-		console.log(
-			`📋 ${clients.length} cliente(s) encontrado(s). Iniciando envio...`,
-		);
+		try {
+			console.log(`📦 Produto: ${productName}, URL: ${productUrl}`);
 
-		let sent = 0;
-		let failed = 0;
-		const results = [];
+			// 2. Buscar clientes do Supabase
+			const clients = await this.supabaseClient.getRuferClients();
 
-		// 3. Iterar e enviar para cada cliente
-		for (const client of clients) {
-			const { customer_name, customer_phone } = client;
-
-			if (!customer_phone) {
-				console.log(`⚠️ Cliente "${customer_name}" sem telefone, pulando...`);
-				failed++;
-				results.push({ customer_name, status: 'skipped', reason: 'no_phone' });
-				continue;
+			if (!clients || clients.length === 0) {
+				console.log('⚠️ Nenhum cliente encontrado na tabela rufer_clients');
+				await this.supabaseClient.finishProductBroadcast(productId, {
+					status: 'failed',
+					sent: 0,
+					failed: 0,
+					total: 0,
+					lastError: 'No clients found in rufer_clients',
+				});
+				return { success: true, sent: 0, failed: 0, total: 0 };
 			}
 
-			try {
-				const message = this.buildMessage(
-					customer_name || 'Cliente',
-					productName,
-					productUrl,
-				);
-				const result = await this.notificationService.sendWhatsAppNotification(
-					customer_phone,
-					message,
-				);
+			console.log(
+				`📋 ${clients.length} cliente(s) encontrado(s). Iniciando envio...`,
+			);
 
-				if (result?.skipped) {
-					console.log(
-						`🚫 Mensagem para "${customer_name}" duplicada, pulando.`,
-					);
+			let sent = 0;
+			let failed = 0;
+			const results = [];
+
+			// 3. Iterar e enviar para cada cliente
+			for (const client of clients) {
+				const { customer_name, customer_phone } = client;
+
+				if (!customer_phone) {
+					console.log(`⚠️ Cliente "${customer_name}" sem telefone, pulando...`);
+					failed++;
 					results.push({
 						customer_name,
 						status: 'skipped',
-						reason: result.reason,
+						reason: 'no_phone',
 					});
-				} else {
-					console.log(
-						`✅ Mensagem enviada para "${customer_name}" (${customer_phone})`,
-					);
-					sent++;
-					results.push({ customer_name, status: 'sent' });
+					continue;
 				}
-			} catch (error) {
-				console.error(
-					`❌ Erro ao enviar para "${customer_name}":`,
-					error.message,
-				);
-				failed++;
-				results.push({ customer_name, status: 'error', reason: error.message });
+
+				try {
+					const message = this.buildMessage(
+						customer_name || 'Cliente',
+						productName,
+						productUrl,
+					);
+					const result =
+						await this.notificationService.sendWhatsAppNotification(
+							customer_phone,
+							message,
+						);
+
+					if (result?.skipped) {
+						console.log(
+							`🚫 Mensagem para "${customer_name}" duplicada, pulando.`,
+						);
+						results.push({
+							customer_name,
+							status: 'skipped',
+							reason: result.reason,
+						});
+					} else {
+						console.log(
+							`✅ Mensagem enviada para "${customer_name}" (${customer_phone})`,
+						);
+						sent++;
+						results.push({ customer_name, status: 'sent' });
+					}
+				} catch (error) {
+					console.error(
+						`❌ Erro ao enviar para "${customer_name}":`,
+						error.message,
+					);
+					failed++;
+					results.push({
+						customer_name,
+						status: 'error',
+						reason: error.message,
+					});
+				}
+
+				// Delay entre mensagens para não ser bloqueado
+				if (clients.indexOf(client) < clients.length - 1) {
+					await this.sleep(DELAY_BETWEEN_MESSAGES_MS);
+				}
 			}
 
-			// Delay entre mensagens para não ser bloqueado
-			if (clients.indexOf(client) < clients.length - 1) {
-				await this.sleep(DELAY_BETWEEN_MESSAGES_MS);
-			}
+			console.log(
+				`📊 Broadcast finalizado: ${sent} enviados, ${failed} falharam, ${clients.length} total`,
+			);
+
+			const finalStatus = sent > 0 ? 'sent' : 'failed';
+			await this.supabaseClient.finishProductBroadcast(productId, {
+				status: finalStatus,
+				sent,
+				failed,
+				total: clients.length,
+				lastError:
+					finalStatus === 'failed'
+						? 'No notification could be delivered for this product'
+						: null,
+			});
+
+			return {
+				success: true,
+				productId,
+				productName,
+				sent,
+				failed,
+				total: clients.length,
+				results,
+			};
+		} catch (error) {
+			await this.supabaseClient.finishProductBroadcast(productId, {
+				status: 'failed',
+				sent: 0,
+				failed: 0,
+				total: 0,
+				lastError: error.message,
+			});
+			throw error;
 		}
-
-		console.log(
-			`📊 Broadcast finalizado: ${sent} enviados, ${failed} falharam, ${clients.length} total`,
-		);
-
-		return {
-			success: true,
-			productId,
-			productName,
-			sent,
-			failed,
-			total: clients.length,
-			results,
-		};
 	}
 }
 
