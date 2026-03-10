@@ -17,14 +17,6 @@ const config = {
 		apiKey: process.env.CUSTOMER_API_KEY,
 		storeId: process.env.CUSTOMER_STORE_ID,
 	},
-	supabase: {
-		url:
-			process.env.NEXT_PUBLIC_SUPABASE_URL ||
-			'https://kdfqrbqerrawbvzmuxgf.supabase.co',
-		anonKey:
-			process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-			'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkZnFyYnFlcnJhd2J2em11eGdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxOTA5MTIsImV4cCI6MjA3NDc2NjkxMn0.AZx52hImgm7pR-4JAFUh-ZrpHsSIpH1UV8WYi7fMkYI',
-	},
 };
 
 export default config;

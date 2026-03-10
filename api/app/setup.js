@@ -1,27 +1,21 @@
 import config from './config/index.js';
 import { ChatProClient } from './clients/chatpro.client.js';
 import { CustomerApiClient } from './clients/storeapi.client.js';
-import { SupabaseClient } from './clients/supabase.client.js';
 import { ChatProWhatsAppProvider } from './providers/whatsapp.provider.js';
 import { WhatsNotificationService } from './services/notification.service.js';
 import { OrderService } from './services/order.service.js';
 import { ProductService } from './services/product.service.js';
-import { ProductBroadcastService } from './services/product-broadcast.service.js';
 import { WebhookController } from './webhook.controller.js';
-import { ProductWebhookController } from './product-webhook.controller.js';
 
 class AppSetup {
 	constructor() {
 		this.chatProClient = null;
 		this.customerApiClient = null;
-		this.supabaseClient = null;
 		this.chatProWhatsAppProvider = null;
 		this.notificationService = null;
 		this.productService = null;
 		this.orderService = null;
-		this.productBroadcastService = null;
 		this.webhookController = null;
-		this.productWebhookController = null;
 	}
 
 	async initialize() {
@@ -65,34 +59,16 @@ class AppSetup {
 			// Criar o controller de webhook
 			this.webhookController = new WebhookController(this.orderService);
 
-			// Criar o cliente Supabase
-			this.supabaseClient = new SupabaseClient();
-
-			// Criar o serviço de broadcast de produtos
-			this.productBroadcastService = new ProductBroadcastService(
-				this.supabaseClient,
-				this.notificationService,
-				this.productService,
-			);
-
-			// Criar o controller do webhook de produto
-			this.productWebhookController = new ProductWebhookController(
-				this.productBroadcastService,
-			);
-
 			console.log('🚀 WhatsApp Notify services initialized successfully!');
 
 			return {
 				chatProClient: this.chatProClient,
 				customerApiClient: this.customerApiClient,
-				supabaseClient: this.supabaseClient,
 				chatProWhatsAppProvider: this.chatProWhatsAppProvider,
 				notificationService: this.notificationService,
 				productService: this.productService,
 				orderService: this.orderService,
-				productBroadcastService: this.productBroadcastService,
 				webhookController: this.webhookController,
-				productWebhookController: this.productWebhookController,
 			};
 		} catch (error) {
 			console.error('❌ Failed to initialize services:', error.message);
@@ -103,9 +79,7 @@ class AppSetup {
 	validateConfig() {
 		// Validar configuração do ChatPro
 		const chatProRequired = ['baseUrl', 'instanceId', 'apiKey'];
-		const chatProMissing = chatProRequired.filter(
-			(key) => !config.chatPro[key],
-		);
+		const chatProMissing = chatProRequired.filter((key) => !config.chatPro[key]);
 
 		if (chatProMissing.length > 0) {
 			throw new Error(
@@ -115,9 +89,7 @@ class AppSetup {
 
 		// Validar configuração da API do Cliente
 		const customerApiRequired = ['baseUrl', 'apiKey', 'storeId'];
-		const customerApiMissing = customerApiRequired.filter(
-			(key) => !config.customerApi[key],
-		);
+		const customerApiMissing = customerApiRequired.filter((key) => !config.customerApi[key]);
 
 		if (customerApiMissing.length > 0) {
 			throw new Error(
