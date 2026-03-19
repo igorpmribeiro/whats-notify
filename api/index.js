@@ -18,7 +18,7 @@ async function startServer() {
 	try {
 		// Inicializar todos os serviços
 		const services = await appSetup.initialize();
-		
+
 		// Configurar rotas
 		const webhookRouter = createWebhookRouter(services.webhookController);
 		const chatProRouter = createChatProRouter(services.chatProClient);
@@ -37,7 +37,7 @@ async function startServer() {
 					qrcode: '/chatpro/qrcode',
 					qrcodeDisplay: '/chatpro/qrcode/display',
 					test: '/test-message',
-				}
+				},
 			});
 		});
 
@@ -45,18 +45,18 @@ async function startServer() {
 		app.post('/test-message', async (req, res) => {
 			try {
 				const { phoneNumber, message } = req.body;
-				
+
 				if (!phoneNumber) {
 					return res.status(400).json({ error: 'phoneNumber is required' });
 				}
 
 				const result = await appSetup.sendTestMessage(phoneNumber, message);
-				
-				const response = { 
-					success: true, 
+
+				const response = {
+					success: true,
 					message: 'Test message processed',
 					phoneNumber,
-					sent: !result?.skipped
+					sent: !result?.skipped,
 				};
 
 				if (result?.skipped) {
@@ -65,9 +65,9 @@ async function startServer() {
 
 				res.json(response);
 			} catch (error) {
-				res.status(500).json({ 
+				res.status(500).json({
 					error: 'Failed to send test message',
-					details: error.message 
+					details: error.message,
 				});
 			}
 		});
@@ -75,11 +75,12 @@ async function startServer() {
 		// Em desenvolvimento local, iniciamos o servidor
 		app.listen(PORT, () => {
 			console.log(`🚀 Server is running on http://localhost:${PORT}`);
-			console.log(`📱 WhatsApp notifications ready!`);
-			console.log(`📋 Webhook endpoint: http://localhost:${PORT}/webhook/order-update`);
+			console.log('📱 WhatsApp notifications ready!');
+			console.log(
+				`📋 Webhook endpoint: http://localhost:${PORT}/webhook/order-update`,
+			);
 			console.log(`🧪 Test endpoint: http://localhost:${PORT}/test-message`);
 		});
-
 	} catch (error) {
 		console.error('❌ Failed to start server:', error.message);
 		process.exit(1);

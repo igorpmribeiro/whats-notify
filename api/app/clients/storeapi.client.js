@@ -21,12 +21,12 @@ class CustomerApiClient {
 				const { data, error } = await this.supabase
 					.from('api_tokens')
 					.select('access_token')
-					.eq('store_id', this.storeId)
+					.eq('app_name', 'wpp_app')
 					.single();
 
 				if (!error && data?.access_token) {
 					if (process.env.NODE_ENV !== 'production') {
-						console.log(`🔑 Using cached token for store ${this.storeId}`);
+						console.log(`🔑 Using cached token for app wpp_app`);
 					}
 					return data.access_token;
 				}
@@ -83,12 +83,12 @@ class CustomerApiClient {
 					const { data, error: supabaseError } = await this.supabase
 						.from('api_tokens')
 						.select('access_token')
-						.eq('store_id', this.storeId)
+						.eq('app_name', 'wpp_app')
 						.single();
 
 					if (!supabaseError && data?.access_token) {
 						if (process.env.NODE_ENV !== 'production') {
-							console.log(`🔑 Using cached token for store ${this.storeId}`);
+							console.log(`🔑 Using cached token for app wpp_app`);
 						}
 						return data.access_token;
 					}
@@ -109,24 +109,21 @@ class CustomerApiClient {
 
 	async updateTokenInSupabase(token) {
 		try {
-			// Usar UPSERT para garantir que não há duplicatas
-			// onConflict: 'store_id' significa que se já existir um registro com o mesmo store_id,
-			// ele será atualizado ao invés de criar um novo
 			const { error } = await this.supabase.from('api_tokens').upsert(
 				{
-					store_id: this.storeId,
+					app_name: 'wpp_app',
 					access_token: token,
 				},
 				{
-					onConflict: 'store_id',
-					ignoreDuplicates: false, // Atualiza se existir
+					onConflict: 'app_name',
+					ignoreDuplicates: false,
 				},
 			);
 
 			if (error) {
 				console.error('Error upserting token in Supabase:', error);
 			} else if (process.env.NODE_ENV !== 'production') {
-				console.log(`✅ Token saved for store ${this.storeId}`);
+				console.log(`✅ Token saved for app wpp_app`);
 			}
 		} catch (error) {
 			console.error('Error saving token to Supabase store:', error);
