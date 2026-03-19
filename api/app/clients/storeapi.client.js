@@ -7,10 +7,10 @@ class CustomerApiClient {
 		this.apiKey = apiKey;
 		this.storeId = storeId;
 
-		// Initialize Supabase client
+		// Initialize Supabase client with service role key (bypasses RLS)
 		this.supabase = createClient(
-			process.env.NEXT_PUBLIC_SUPABASE_URL,
-			process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+			process.env.SUPABASE_URL,
+			process.env.SUPABASE_SERVICE_ROLE_KEY,
 		);
 	}
 
