@@ -181,7 +181,7 @@ class OrderService {
 📞 Para cancelar a reserva, entre em contato pelo WhatsApp.
 
 ⚠️ *Chave Pix:* 23726127000198
-Ubacred Cobranças e Pagamentos LTDA.
+Ubacred Cobranças e Pagamentos - Itau
 Envie o comprovante do PIX nesse WhatsApp.
 
 ⚠️ *ATENÇÃO: Produtos reservados e não retirados nos impedem de atender outros lojistas.*`,
