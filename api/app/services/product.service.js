@@ -25,6 +25,28 @@ class ProductService {
 			throw new Error('Failed to fetch product names');
 		}
 	}
+
+	// Retorna nomes dos produtos e o valor total do pedido em uma única chamada
+	async getOrderDetails(orderId) {
+		try {
+			const data = await this.customerApiClient.getOrder(orderId);
+			const products = data?.order?.products || [];
+
+			// O total do pedido (já com frete e descontos) vem em order.totals
+			const orderTotal = data?.order?.totals?.find(
+				(total) => total.code === 'ot_total',
+			);
+			const totalValue = orderTotal?.value ?? data?.totalValue ?? null;
+
+			return {
+				productNames: products.map((product) => product.name),
+				totalValue: typeof totalValue === 'number' ? totalValue : null,
+			};
+		} catch (error) {
+			console.error('Error fetching order details:', error);
+			throw new Error('Failed to fetch order details');
+		}
+	}
 }
 
 export { ProductService };

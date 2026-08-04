@@ -169,7 +169,7 @@ class CustomerApiClient {
 		}
 	}
 
-	async getProducts(orderId) {
+	async getOrder(orderId) {
 		try {
 			const token = await this.getAccessToken();
 			const options = {
@@ -182,7 +182,7 @@ class CustomerApiClient {
 			};
 
 			const response = await axios(options);
-			return response.data.order.products;
+			return response.data;
 		} catch (error) {
 			// Verificar se o erro é 403 (token inválida)
 			if (error.response?.status === 403) {
@@ -206,7 +206,7 @@ class CustomerApiClient {
 						};
 
 						const retryResponse = await axios(retryOptions);
-						return retryResponse.data.order.products;
+						return retryResponse.data;
 					} catch (retryError) {
 						console.error('Error after token refresh:', retryError);
 						throw retryError;
@@ -214,9 +214,14 @@ class CustomerApiClient {
 				}
 			}
 
-			console.error('Error fetching products:', error);
+			console.error('Error fetching order:', error);
 			throw error;
 		}
+	}
+
+	async getProducts(orderId) {
+		const data = await this.getOrder(orderId);
+		return data.order.products;
 	}
 }
 

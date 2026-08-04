@@ -86,15 +86,17 @@ class OrderService {
 				);
 			}
 
-			// Get Product Name
-			const productName = await this.productService.getProductName(orderId);
+			// Get product names and order total
+			const { productNames, totalValue } =
+				await this.productService.getOrderDetails(orderId);
 
 			// Create personalized message based on status label
 			const message = this.createStatusMessage(
 				orderId,
 				status.label,
 				customer.name,
-				productName,
+				productNames,
+				totalValue,
 			);
 
 			// Notify the customer about the order status update
@@ -136,18 +138,51 @@ class OrderService {
 		return `\n${productList}`;
 	}
 
-	createStatusMessage(orderId, statusLabel, customerName, productName) {
+	// Formata o valor em Real (R$ 1.234,56)
+	formatCurrency(value) {
+		return new Intl.NumberFormat('pt-BR', {
+			style: 'currency',
+			currency: 'BRL',
+		}).format(value);
+	}
+
+	// Linha do preço: valor puro para 1 produto, "Total" quando houver vários
+	formatPriceLine(totalValue, productNames) {
+		if (typeof totalValue !== 'number' || Number.isNaN(totalValue)) {
+			return '';
+		}
+
+		const formattedValue = this.formatCurrency(totalValue);
+		const hasMultipleProducts = (productNames?.length || 0) > 1;
+
+		return hasMultipleProducts
+			? `\n\n*Total:* ${formattedValue}`
+			: `\n${formattedValue}`;
+	}
+
+	createStatusMessage(
+		orderId,
+		statusLabel,
+		customerName,
+		productName,
+		totalValue,
+	) {
 		const greeting = customerName ? `Olá ${customerName}! ` : 'Olá! ';
 		const formattedProducts = this.formatProductNames(productName);
+		const priceLine = this.formatPriceLine(totalValue, productName);
 
 		const statusMessages = {
 			RESERVADO: `📋 ${greeting}Sua reserva foi feita com sucesso!
 
 🔢 *Pedido:* #${orderId}
-📦 *Produto(s):* ${formattedProducts}
+📦 *Produto(s):* ${formattedProducts}${priceLine}
 
 ⏰ O produto ficará reservado até o próximo dia útil.
 📞 Para cancelar a reserva, entre em contato pelo WhatsApp.
+
+⚠️ *Chave Pix:* 23726127000198
+Ubacred Cobranças e Pagamentos LTDA.
+Envie o comprovante do PIX nesse WhatsApp.
 
 ⚠️ *ATENÇÃO: Produtos reservados e não retirados nos impedem de atender outros lojistas.*`,
 
